@@ -7,19 +7,80 @@
 //
 
 import UIKit
+import CoreData
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
+    //variables
+    var movies = [Movie]()
+    
+    //Outlets
+    @IBOutlet weak var tableView: UITableView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        
+        tableView.dataSource = self
+        tableView.delegate = self
+        
+    }
+    
+    override func viewDidAppear(animated: Bool) {
+        fetchAndSetResult()
+        tableView.reloadData()
+    }
+    
+    func fetchAndSetResult(){
+        let app = UIApplication.sharedApplication().delegate as! AppDelegate
+        let context = app.managedObjectContext
+        let fetchRequest = NSFetchRequest(entityName: "Movie")
+        
+        do {
+            let result = try context.executeFetchRequest(fetchRequest)
+            self.movies = result as! [Movie]
+        }catch let err as NSError{
+            print(err.debugDescription)
+        }
+        
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+        return 1
     }
-
+    
+    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        
+        if let cell = tableView.dequeueReusableCellWithIdentifier("MovieCell") as? MovieCell {
+            let movie = movies[indexPath.row]
+            cell.buttonTag(indexPath.row)
+            cell.configureCell(movie)
+            return cell
+        }else{
+            return MovieCell()
+        }
+        
+    }
+    
+    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return movies.count
+    }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if segue.identifier == "MovieDetailVC" {
+            if let movieDetailVC = segue.destinationViewController as? MovieDetailVC {
+                if let movie = sender as? Movie{
+                    movieDetailVC.movie = movie
+                }
+            }
+        }
+    }
+    
+    @IBAction func cellBtnTapped(sender: UIButton!){
+        let buttonRow = sender.tag
+        let movie = movies[buttonRow]
+        performSegueWithIdentifier("MovieDetailVC", sender: movie)
+        print(buttonRow)
+    }
 
 }
 
